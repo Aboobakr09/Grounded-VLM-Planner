@@ -1,0 +1,92 @@
+[
+    {
+        "task": "pick up the red block",
+        "steps": [
+            "walk to table",
+            "look at table",
+            "find red_block",
+            "approach red_block",
+            "align with red_block",
+            "grasp red_block",
+            "lift object"
+        ]
+    },
+    {
+        "task": "stack red block on blue block",
+        "steps": [
+            "walk to table",
+            "look at table",
+            "find red_block",
+            "approach red_block",
+            "grasp red_block",
+            "lift object",
+            "find blue_block",
+            "move above blue_block",
+            "lower object",
+            "release object"
+        ]
+    },
+    {
+        "task": "put all blocks in the box",
+        "steps": [
+            "walk to table",
+            "look at table",
+            "find red_block",
+            "grasp red_block",
+            "find box",
+            "place object in box",
+            "release object",
+            "find blue_block",
+            "grasp blue_block",
+            "place object in box",
+            "release object",
+            "find green_block",
+            "grasp green_block",
+            "place object in box",
+            "release object"
+        ]
+    },
+    {
+        "task": "move blue block left of green block",
+        "steps": [
+            "walk to table",
+            "find blue_block",
+            "grasp blue_block",
+            "lift object",
+            "find green_block",
+            "move left",
+            "align with target position",
+            "lower object",
+            "release object"
+        ]
+    },
+    {
+        "task": "build a tower with 3 blocks",
+        "steps": [
+            "walk to table",
+            "find red_block",
+            "grasp red_block",
+            "place object on table",
+            "find blue_block",
+            "grasp blue_block",
+            "stack block on red_block",
+            "release object",
+            "find green_block",
+            "grasp green_block",
+            "stack block on blue_block",
+            "release object"
+        ]
+    },
+    {
+        "task": "get object from fridge",
+        "steps": [
+            "walk to fridge",
+            "open fridge",
+            "look in fridge",
+            "find object",
+            "grasp object",
+            "lift object",
+            "close fridge"
+        ]
+    }
+]

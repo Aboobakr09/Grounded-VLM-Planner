@@ -1,0 +1,48 @@
+# Configuration Schema for Grounded VLM Planner
+# Defines allowed fields and types for validation
+
+grounding:
+  confidence_threshold:
+    type: float
+    range: [0.0, 1.0]
+    description: "Minimum combined confidence to proceed with planning"
+  
+  spatial_threshold:
+    type: float
+    range: [0.01, 0.2]
+    description: "Distance threshold for spatial relation inference"
+
+perception:
+  model:
+    type: string
+    allowed: ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"]
+    description: "VLM model for scene extraction"
+  
+  default_block_height:
+    type: float
+    range: [0.01, 0.2]
+    description: "Default block height in meters"
+
+workspace:
+  x_range:
+    type: [float, float]
+    description: "Valid x-axis range in meters"
+  
+  y_range:
+    type: [float, float]
+    description: "Valid y-axis range in meters"
+  
+  z_range:
+    type: [float, float]
+    description: "Valid z-axis range in meters"
+
+waypoints:
+  approach_height:
+    type: float
+    range: [0.05, 0.3]
+    description: "Height above object for approach phase"
+  
+  lift_height:
+    type: float
+    range: [0.05, 0.5]
+    description: "Height after grasping before moving"
