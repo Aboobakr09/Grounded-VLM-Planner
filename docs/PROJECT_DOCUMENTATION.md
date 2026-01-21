@@ -6,14 +6,17 @@ This system lets robots understand and execute natural language commands safely.
 
 ## The Problem We're Solving
 
-Vision-language models are powerful but they make mistakes. They sometimes "see" objects that don't exist, or they're uncertain about what they're looking at. Most robotic systems trust these outputs blindly and end up trying to grab things that aren't there.
+Both papers have gaps when it comes to perception uncertainty:
 
-Our system adds a verification step. Before planning any actions, we check:
-- Do the required objects actually exist in the scene?
-- Is the vision model confident enough about what it sees?
-- Do the object positions make physical sense?
+- **Language Planner** is great at breaking down tasks, but it assumes all objects exist. No checking.
+- **ReKep** tracks keypoints in real-time with closed-loop feedback, but can fail when keypoints get misidentified or occluded.
 
-If any check fails, the robot stops and explains the problem.
+Neither one explicitly checks "does this object actually exist in the scene?" before starting. That's what we add:
+- Do the required objects actually exist?
+- Is the vision model confident enough?
+- Do the positions make physical sense?
+
+If something's off, the robot stops and tells you why.
 
 ## How It Works
 
