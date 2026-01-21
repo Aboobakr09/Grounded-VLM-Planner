@@ -93,13 +93,17 @@ echo "GEMINI_API_KEY=your_key" > .env
 
 ## Limitations
 
-There are some things this system can't handle yet:
+There are some things this system can't do yet:
+- **Single-object pick tasks** - "pick up the red block" will generate 0 waypoints because of a bug in the pick parser. Stack and multi-object tasks work fine though.
+- **Hardcoded threshold** - The 0.6 confidence cutoff is just a guess. It should be tuned based on actual VLM error rates, or made adaptive.
+- **Occlusion** - If an object is hidden behind something, grounding will fail even if the object actually exists.
+- **Static scenes** - The system assumes nothing moves during execution. It won't replan if things shift around.
+- **No depth sensor** - VLM position estimates can be off by 2-5cm. Real deployment would need depth cameras for accuracy.
+- **Single arm only** - There's no support for bimanual manipulation.
+- **No force control** - The system can't handle delicate objects or detect if a grasp failed.
+- **Template constraints** - Constraints aren't learned from data, they're just pattern-matched.
 
-- **Hardcoded threshold** - The 0.6 confidence threshold is a guess. Should be tuned based on real VLM error rates.
-- **No occlusion handling** - If an object is hidden behind something, grounding will fail even though the object exists.
-- **Static scenes only** - Assumes nothing moves during execution. No replanning if things change.
-- **Single arm** - Only supports one robot arm, no bimanual manipulation.
-- **Simple geometric checks** - Just checking if positions are within bounds. No collision detection.
+These are engineering limitations, not fundamental ones. The architecture can scale with better sensors and perception.
 
 ## References
 
