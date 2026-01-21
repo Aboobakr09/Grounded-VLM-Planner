@@ -143,7 +143,7 @@ grounded_vlm_planner/
 │   └── reasoning_verifier.py 
 ├── configs/                 
 ├── docs/
-│   └── Documentation.md                   
+│   └── Project_Documentation.md                   
 ├── demo_full_pipeline.py    
 └── requirements.txt         
 ```
