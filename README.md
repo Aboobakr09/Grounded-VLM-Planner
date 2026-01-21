@@ -1,4 +1,6 @@
 # Grounded VLM Planner
+![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 ## Description
 
@@ -148,4 +150,4 @@ grounded_vlm_planner/
 
 ## License
 
-I've applied for an MIT license to the codebase, which allows anyone to use, modify, or contribute to the code freely.
+This project is licensed under the MIT License, which allows anyone to use, modify, or contribute to the code freely.
