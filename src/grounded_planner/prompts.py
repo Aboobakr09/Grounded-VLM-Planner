@@ -42,6 +42,19 @@ Task: {task}
 Reasoning:
 """
 
+# Dynamic few-shot prompt (Language Planner approach: use most similar example)
+DYNAMIC_COT_PROMPT = """
+You are a robot task planner. Given a task, decompose it into simple steps.
+Use the provided example as a guide for formatting.
+
+## Example (most similar task)
+{example}
+
+## Your Task
+Task: {task}
+Reasoning:
+"""
+
 
 SCENE_EXTRACTION_PROMPT = """
 You are analyzing a top-down image of a tabletop with colored blocks.

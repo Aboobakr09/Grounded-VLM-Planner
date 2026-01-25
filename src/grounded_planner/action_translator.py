@@ -39,7 +39,7 @@ class ActionTranslator:
         # Load admissible actions
         if actions_path is None:
             base_dir = Path(__file__).parent.parent.parent
-            actions_path = base_dir / "configs" / "available_actions.json"
+            actions_path = base_dir / "configs" / "virtualhome_actions.json"
         
         with open(actions_path, 'r') as f:
             self.actions = json.load(f)
@@ -56,18 +56,63 @@ class ActionTranslator:
         
         if examples_path is None:
             base_dir = Path(__file__).parent.parent.parent
-            examples_path = base_dir / "configs" / "available_examples.json"
+            examples_path = base_dir / "configs" / "virtualhome_examples.json"
         
         if Path(examples_path).exists():
             with open(examples_path, 'r') as f:
-                self.examples = json.load(f)
+                raw_examples = json.load(f)
             
-            # Embed example tasks
-            example_tasks = [ex['task'] for ex in self.examples]
-            self.example_embeddings = self.model.encode(
-                example_tasks,
-                convert_to_tensor=True
-            )
+            # Parse examples - handle string format from VirtualHome
+            self.examples = self._parse_examples(raw_examples)
+            
+            if self.examples:
+                # Embed example tasks
+                example_tasks = [ex['task'] for ex in self.examples]
+                self.example_embeddings = self.model.encode(
+                    example_tasks,
+                    convert_to_tensor=True
+                )
+    
+    def _parse_examples(self, raw_examples: list) -> List[dict]:
+        """
+        Parse examples from VirtualHome string format to dict format.
+        
+        Handles:
+        1. List of dicts: [{"task": "X", "steps": ["a", "b"]}]
+        2. List of strings: ["Task: X\\nStep 1: a\\nStep 2: b"]
+        """
+        parsed = []
+        for item in raw_examples:
+            if isinstance(item, dict) and 'task' in item and 'steps' in item:
+                # Already in correct format
+                parsed.append(item)
+            elif isinstance(item, str):
+                # Parse string format: "Task: X\nStep 1: a\nStep 2: b"
+                lines = item.strip().split('\n')
+                if not lines:
+                    continue
+                
+                # Extract task
+                task = lines[0]
+                if task.startswith('Task:'):
+                    task = task[5:].strip()
+                
+                # Extract steps
+                steps = []
+                for line in lines[1:]:
+                    line = line.strip()
+                    if line.startswith('Step'):
+                        # Remove "Step N:" prefix
+                        parts = line.split(':', 1)
+                        if len(parts) > 1:
+                            steps.append(parts[1].strip())
+                        else:
+                            steps.append(line)
+                
+                if task and steps:
+                    parsed.append({'task': task, 'steps': steps})
+        
+        return parsed
     
     def translate_action(self, generated_action: str) -> Tuple[str, float]:
         """
