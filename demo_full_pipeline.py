@@ -35,6 +35,29 @@ except Exception as e:
     HAS_TRANSLATOR = False
     print(f"ActionTranslator unavailable: {e}")
 
+# NEW: Enhanced Action Matcher with VirtualHome vocabulary
+try:
+    from grounded_planner.enhanced_action_matcher import (
+        EnhancedActionMatcher, 
+        create_enhanced_matcher
+    )
+    HAS_ENHANCED_MATCHER = True
+except Exception as e:
+    HAS_ENHANCED_MATCHER = False
+    print(f"EnhancedActionMatcher unavailable: {e}")
+
+# Execution Safety Gate - key differentiator from vanilla Language Planner
+try:
+    from grounded_planner.execution_gate import (
+        ExecutionGate,
+        DomainDetector,
+        TaskDomain
+    )
+    HAS_EXECUTION_GATE = True
+except Exception as e:
+    HAS_EXECUTION_GATE = False
+    print(f"ExecutionGate unavailable: {e}")
+
 def create_tabletop_scene() -> SceneGraph:
     """Standard tabletop scene with colored blocks."""
     scene = SceneGraph(name="tabletop_blocks")
@@ -184,36 +207,149 @@ def run_full_pipeline(task: str, use_household: bool = False, verbose: bool = Tr
     
     results["cot_steps"] = cot_steps
     
-    # Language Planner
-    print_section("Step 4: Mapping to robot actions")
+    # Step 4: DIAGNOSTIC ONLY - Language Planner Translation Analysis
+    # ⚠️ This uses VirtualHome vocabulary which is NOT suitable for robot manipulation!
+    # It demonstrates why unconstrained semantic matching is dangerous.
+    print_section("Step 4: [DIAGNOSTIC] VirtualHome Translation Analysis")
+    print("   ⚠️  WARNING: VirtualHome vocab is NOT designed for robot manipulation!")
+    print("   ⚠️  The following shows WHY this approach is dangerous:\n")
     
-    translated_actions = []
+    dangerous_translations = []
     
     if HAS_TRANSLATOR:
         try:
             translator = ActionTranslator()
             
-            # Find similar example
-            example, sim_score = translator.find_similar_example(task)
-            if example:
-                print(f"   Found similar example: '{example['task']}' (match: {sim_score:.0%})")
-            
-            # CoT to actions
+            # CoT to VirtualHome actions (this will produce bad results)
             translations = translator.translate_plan(cot_steps)
-            print(f"\n   Translated to robot actions:")
+            
+            low_confidence_count = 0
             for orig, translated, score in translations:
-                print(f"      '{orig[:40]:<40}' → '{translated}' (score={score:.2f})")
-                translated_actions.append({
+                status = "❌ UNSAFE" if score < 0.7 else "⚠️  LOW" if score < 0.85 else "✓"
+                if score < 0.7:
+                    low_confidence_count += 1
+                print(f"      {status} '{orig[:35]:<35}' → '{translated}' ({score:.0%})")
+                dangerous_translations.append({
                     "original": orig,
                     "translated": translated,
-                    "score": score
+                    "score": score,
+                    "unsafe": score < 0.7
                 })
+            
+            if low_confidence_count > 0:
+                print(f"\n   🚨 {low_confidence_count}/{len(translations)} translations are UNSAFE!")
+                print("   🚨 These should NEVER be used for robot execution!")
+                print("   → This is why Step 4b uses domain-specific vocabulary instead.")
         except Exception as e:
             print(f"   Translation failed: {e}")
     else:
-        print("   Skipping - need sentence-transformers library for this")
+        print("   Skipping - sentence-transformers not available")
     
-    results["translated_actions"] = translated_actions
+    # Store for analysis but clearly mark as non-executable
+    results["diagnostic_translations"] = dangerous_translations
+    results["translation_warning"] = "VirtualHome translations are for DIAGNOSTIC ONLY - do not execute!"
+    
+    # Enhanced Action Matching (Language Planner Integration)
+    vocab_name = "VirtualHome" if use_household else "Robot Manipulation"
+    print_section(f"Step 4b: {vocab_name} vocabulary matching (Language Planner)")
+    
+    matched_actions = []
+    
+    if HAS_ENHANCED_MATCHER:
+        try:
+            # Create enhanced matcher: use robot vocab for tabletop, VirtualHome for household
+            enhanced_matcher = create_enhanced_matcher(use_virtualhome=use_household)
+            
+            # Find similar example
+            example, sim = enhanced_matcher.find_similar_example(task)
+            if example:
+                print(f"   Similar example: '{example['task']}' (match: {sim:.0%})")
+            
+            # Match CoT steps to action vocabulary
+            matches = enhanced_matcher.translate_plan(cot_steps)
+            print(f"\n   Matched to {vocab_name} actions:")
+            for match in matches:
+                print(f"      '{match.original_text[:35]:<35}' → '{match.matched_action}' (sim={match.similarity_score:.2f})")
+                matched_actions.append(match.to_dict())
+            
+            # Optional: Try autoregressive generation if confidence is low
+            avg_score = sum(m.similarity_score for m in matches) / len(matches) if matches else 0
+            if avg_score < 0.6 and enhanced_matcher.llm:
+                print(f"\n   Low confidence ({avg_score:.2f}). Trying autoregressive generation...")
+                try:
+                    autoreg_result = enhanced_matcher.autoregressive_plan(task, max_steps=8, verbose=False)
+                    if autoreg_result.steps:
+                        print(f"   Autoregressive plan ({len(autoreg_result.steps)} steps):")
+                        for i, step in enumerate(autoreg_result.steps, 1):
+                            print(f"      Step {i}: {step.matched_action} (score={step.similarity_score:.2f})")
+                        results["autoregressive_plan"] = autoreg_result.to_dict()
+                        
+                        # CRITICAL FIX: Use autoregressive plan for execution gate if available
+                        matched_actions = [step.to_dict() for step in autoreg_result.steps]
+                        print(f"   → Using autoregressive plan for execution gate")
+                        
+                except Exception as ae:
+                    print(f"   Autoregressive failed: {ae}")
+                    
+        except Exception as e:
+            print(f"   Enhanced matching failed: {e}")
+    else:
+        print("   Skipping - EnhancedActionMatcher not available")
+    
+    results["matched_actions"] = matched_actions
+    
+    # Step 4c: EXECUTION GATE - The Key Safety Layer
+    # This is what separates this system from vanilla Language Planner
+    print_section("Step 4c: Execution Gate (Safety Verification)")
+    
+    execution_allowed = False
+    gate_result = None
+    
+    if HAS_EXECUTION_GATE and matched_actions:
+        try:
+            # Detect domain and apply appropriate ontology
+            detected_domain = DomainDetector.detect(task, scene.to_dict())
+            ontology = "robot_primitives" if not use_household else "virtualhome"
+            
+            gate = ExecutionGate(ontology=ontology)
+            gate_result = gate.evaluate(
+                task=task,
+                matched_actions=matched_actions,
+                scene_objects=scene.to_dict()
+            )
+            
+            # Report
+            print(f"   Domain detected: {detected_domain.value}")
+            print(f"   Ontology: {ontology}")
+            print(f"   Threshold: {gate_result.domain_config.similarity_threshold:.0%}")
+            print(f"   Domain executable: {gate_result.domain_config.executable}")
+            
+            print(f"\n   Action-by-action gate decisions:")
+            for d in gate_result.decisions:
+                status = "✓ PASS" if d.executable else "✗ BLOCK"
+                print(f"      [{status}] '{d.action}' ({d.similarity_score:.0%})")
+                if d.block_reason:
+                    print(f"              └─ {d.block_reason}")
+            
+            execution_allowed = gate_result.all_executable
+            
+            print(f"\n   Gate Result: {len(gate_result.decisions) - gate_result.blocked_count}/{len(gate_result.decisions)} actions passed")
+            
+            if execution_allowed:
+                print("   ✅ EXECUTION ALLOWED: All actions passed safety gate")
+            else:
+                print(f"   🚨 EXECUTION BLOCKED: {gate_result.blocked_count} action(s) failed gate")
+                print("   → Waypoints will still be generated for visualization only")
+            
+            results["execution_gate"] = gate_result.to_dict()
+            
+        except Exception as e:
+            print(f"   Execution gate failed: {e}")
+            execution_allowed = False
+    else:
+        print("   Skipping - ExecutionGate not available or no actions to evaluate")
+    
+    results["execution_allowed"] = execution_allowed
     
     # Waypoint Gen.
     print_section("Step 5: Where should the robot move?")
@@ -237,10 +373,18 @@ def run_full_pipeline(task: str, use_household: bool = False, verbose: bool = Tr
     print(f"  Mode: {'Household' if use_household else 'Tabletop'}")
     print(f"  Objects in scene: {len(scene.objects)}")
     print(f"  Grounding check: {'PASSED' if grounding.success else 'FAILED'} ({grounding.confidence_score:.0%} confident)")
-    print(f"  Task steps: {len(cot_steps)}")
-    print(f"  Robot actions: {len(translated_actions)}")
+    print(f"  Task steps (CoT): {len(cot_steps)}")
+    print(f"  Diagnostic translations: {len(results.get('diagnostic_translations', []))}")
+    print(f"  Matched actions ({vocab_name}): {len(matched_actions)}")
     print(f"  Motion waypoints: {len(waypoints)}")
-    print(f"  Ready to execute: {'Yes' if grounding.success and len(waypoints) > 0 else 'No'}")
+    
+    ready_to_execute = grounding.success and len(waypoints) > 0
+    if HAS_EXECUTION_GATE:
+        ready_to_execute = ready_to_execute and execution_allowed
+        
+    print(f"  Ready to execute: {'Yes' if ready_to_execute else 'No'}")
+    if not execution_allowed and HAS_EXECUTION_GATE:
+        print(f"  ⚠️  Execution blocked by safety gate")
 
     
     return results

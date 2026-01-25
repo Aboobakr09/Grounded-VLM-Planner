@@ -1,0 +1,89 @@
+[
+    {
+        "task": "pick up the red block",
+        "steps": [
+            "locate object",
+            "move gripper above object",
+            "lower gripper to object",
+            "grasp object",
+            "lift object up"
+        ]
+    },
+    {
+        "task": "stack red block on blue block",
+        "steps": [
+            "locate object",
+            "move gripper above object",
+            "lower gripper to object",
+            "grasp object",
+            "lift object up",
+            "move object to target",
+            "lower gripper to object",
+            "release object"
+        ]
+    },
+    {
+        "task": "put all blocks in the box",
+        "steps": [
+            "locate object",
+            "move gripper above object",
+            "grasp object",
+            "lift object up",
+            "move object to target",
+            "release object",
+            "locate object",
+            "move gripper above object",
+            "grasp object",
+            "lift object up",
+            "move object to target",
+            "release object"
+        ]
+    },
+    {
+        "task": "place green block to the left of red block",
+        "steps": [
+            "locate object",
+            "move gripper above object",
+            "lower gripper to object",
+            "grasp object",
+            "lift object up",
+            "move object to target",
+            "lower gripper to object",
+            "release object"
+        ]
+    },
+    {
+        "task": "build a tower with three blocks",
+        "steps": [
+            "locate object",
+            "grasp object",
+            "stack object on object",
+            "locate object",
+            "grasp object",
+            "stack object on object"
+        ]
+    },
+    {
+        "task": "get milk from fridge",
+        "steps": [
+            "navigate to location",
+            "open fridge",
+            "locate object",
+            "grasp object",
+            "lift object up",
+            "close fridge"
+        ]
+    },
+    {
+        "task": "put apple in cabinet",
+        "steps": [
+            "locate object",
+            "grasp object",
+            "navigate to location",
+            "open cabinet",
+            "place object",
+            "release object",
+            "close cabinet"
+        ]
+    }
+]
